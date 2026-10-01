@@ -5,6 +5,20 @@ source "$LOCAL/bin/utils"
 RUST_ANALYZER_VERSION="$2"
 INSTALL_DIR="$HOME/.lsp/rust"
 
+fix_android_paths() {
+  info "Fixing Android private path mapping for rust-analyzer..."
+  # Xed roda o server dentro do PRoot em /home, mas o app manda URIs como
+  # /data/user/0/com.rk.xededitor/local/home/... 
+  # Criando um symlink dentro do sandbox, o path Android passa a funcionar.
+  for base in /data/user/* /data/data; do
+    if [ -d "$base" ]; then
+      mkdir -p "$base/com.rk.xededitor/local"
+      rm -rf "$base/com.rk.xededitor/local/home"
+      ln -sfn /home "$base/com.rk.xededitor/local/home"
+    fi
+  done
+}
+
 install_rustup() {
   info "Installing Rust toolchain..."
 
@@ -59,6 +73,8 @@ get_arch() {
 install() {
   info 'Installing rust-analyzer language server...'
 
+  fix_android_paths
+
   apt install -y curl ca-certificates gzip
   check_rust_toolchain
 
@@ -85,6 +101,9 @@ uninstall() {
   info 'Uninstalling rust-analyzer language server...'
 
   rm -rf "$INSTALL_DIR"
+  # limpa o link criado, opcional
+  rm -rf /data/user/0/com.rk.xededitor/local/home
+  rm -rf /data/data/com.rk.xededitor/local/home
 
   info 'rust-analyzer uninstalled successfully.'
   exit 0
@@ -92,6 +111,8 @@ uninstall() {
 
 update() {
   info 'Updating rust-analyzer language server...'
+
+  fix_android_paths
 
   ARCH=$(get_arch)
   URL="https://github.com/rust-lang/rust-analyzer/releases/download/${RUST_ANALYZER_VERSION}/rust-analyzer-${ARCH}.gz"
