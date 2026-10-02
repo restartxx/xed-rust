@@ -7,28 +7,21 @@ INSTALL_DIR="$HOME/.lsp/rust"
 
 fix_android_paths() {
   info "Fixing Android private path mapping for rust-analyzer..."
-  # Xed roda o server dentro do PRoot em /home, mas o app manda URIs como
-  # /data/user/0/com.rk.xededitor/local/home/... 
-  # Criando um symlink dentro do sandbox, o path Android passa a funcionar.
-  for base in /data/user/* /data/data; do
-    if [ -d "$base" ]; then
-      mkdir -p "$base/com.rk.xededitor/local"
-      rm -rf "$base/com.rk.xededitor/local/home"
-      ln -sfn /home "$base/com.rk.xededitor/local/home"
-    fi
-  done
+  cd /tmp || true
+  mkdir -p /data/user/0/com.rk.xededitor/local
+  rm -rf /data/user/0/com.rk.xededitor/local/home
+  ln -sfn /home /data/user/0/com.rk.xededitor/local/home
+  cd "$HOME" || cd /tmp || true
 }
 
 install_rustup() {
   info "Installing Rust toolchain..."
-
+  cd /tmp || true
   curl --proto '=https' --tlsv1.3 -sSf https://sh.rustup.rs | sh -s -- -y
-
   export PATH="$HOME/.cargo/bin:$PATH"
-
   rustup component add rust-src
-
   info "Rust toolchain installed successfully."
+  cd "$HOME" || true
 }
 
 check_rust_toolchain() {
@@ -73,8 +66,6 @@ get_arch() {
 install() {
   info 'Installing rust-analyzer language server...'
 
-  fix_android_paths
-
   apt install -y curl ca-certificates gzip
   check_rust_toolchain
 
@@ -93,6 +84,8 @@ install() {
 
   echo "$RUST_ANALYZER_VERSION" > version.txt
 
+  fix_android_paths
+
   info 'rust-analyzer installed successfully.'
   exit 0
 }
@@ -101,9 +94,7 @@ uninstall() {
   info 'Uninstalling rust-analyzer language server...'
 
   rm -rf "$INSTALL_DIR"
-  # limpa o link criado, opcional
   rm -rf /data/user/0/com.rk.xededitor/local/home
-  rm -rf /data/data/com.rk.xededitor/local/home
 
   info 'rust-analyzer uninstalled successfully.'
   exit 0
@@ -111,8 +102,6 @@ uninstall() {
 
 update() {
   info 'Updating rust-analyzer language server...'
-
-  fix_android_paths
 
   ARCH=$(get_arch)
   URL="https://github.com/rust-lang/rust-analyzer/releases/download/${RUST_ANALYZER_VERSION}/rust-analyzer-${ARCH}.gz"
@@ -129,6 +118,8 @@ update() {
   chmod +x rust-analyzer
 
   echo "$RUST_ANALYZER_VERSION" > version.txt
+
+  fix_android_paths
 
   info 'rust-analyzer updated successfully.'
   exit 0
