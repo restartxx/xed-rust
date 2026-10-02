@@ -5,23 +5,16 @@ source "$LOCAL/bin/utils"
 RUST_ANALYZER_VERSION="$2"
 INSTALL_DIR="$HOME/.lsp/rust"
 
-fix_android_paths() {
-  info "Fixing Android private path mapping for rust-analyzer..."
-  cd /tmp || true
-  mkdir -p /data/user/0/com.rk.xededitor/local
-  rm -rf /data/user/0/com.rk.xededitor/local/home
-  ln -sfn /home /data/user/0/com.rk.xededitor/local/home
-  cd "$HOME" || cd /tmp || true
-}
-
 install_rustup() {
   info "Installing Rust toolchain..."
-  cd /tmp || true
+
   curl --proto '=https' --tlsv1.3 -sSf https://sh.rustup.rs | sh -s -- -y
+
   export PATH="$HOME/.cargo/bin:$PATH"
+
   rustup component add rust-src
+
   info "Rust toolchain installed successfully."
-  cd "$HOME" || true
 }
 
 check_rust_toolchain() {
@@ -84,8 +77,6 @@ install() {
 
   echo "$RUST_ANALYZER_VERSION" > version.txt
 
-  fix_android_paths
-
   info 'rust-analyzer installed successfully.'
   exit 0
 }
@@ -94,7 +85,6 @@ uninstall() {
   info 'Uninstalling rust-analyzer language server...'
 
   rm -rf "$INSTALL_DIR"
-  rm -rf /data/user/0/com.rk.xededitor/local/home
 
   info 'rust-analyzer uninstalled successfully.'
   exit 0
@@ -118,8 +108,6 @@ update() {
   chmod +x rust-analyzer
 
   echo "$RUST_ANALYZER_VERSION" > version.txt
-
-  fix_android_paths
 
   info 'rust-analyzer updated successfully.'
   exit 0
